@@ -3,295 +3,91 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Capy Jump</title>
-    <link rel="icon" type="image/x-icon" href="favicon.png">
+    <title>Menu - O Pulo da Capivara</title>
     <style>
-        /* --- ESTILOS GERAIS --- */
-        * { margin: 0; padding: 0; box-sizing: border-box; overflow: hidden; user-select: none; }
-
         body {
-            width: 100vw; height: 100vh;
-            display: flex; justify-content: center; align-items: center;
-            background-color: #333;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0; padding: 0; width: 100vw; height: 100vh;
+            display: flex; flex-direction: column; 
+            justify-content: center; align-items: center;
+            background-color: #222;
+            font-family: 'Segoe UI', sans-serif;
+            overflow: hidden;
         }
-
-        .game-board {
-            width: 100%; height: 100%;
-            position: relative; overflow: hidden;
+        
+        .background-container {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            z-index: -1;
         }
 
         .background-img {
-            position: absolute; top: 0; left: 0;
             width: 100%; height: 100%;
-            object-fit: cover; z-index: -1;
-            opacity: 0.8; /* Levemente escuro para destacar o jogo */
+            object-fit: cover;
+            opacity: 0.8;
+            animation: panBackground 20s infinite alternate ease-in-out;
+            filter: blur(3px) brightness(0.6);
         }
 
-        /* --- PERSONAGENS --- */
-        .capivara-container {
-            width: 200px; height: -100px;
-            position: absolute;
-            bottom: 20px; /* Ajustado para o novo chão */
-            left: 50px;
-            z-index: 5;
-            transition: bottom 0.1s; /* Suaviza pequenas quedas */
-        }
-        .capivara-container img { 
-            width: 100%; height: 100%; 
-            object-fit: contain; /* Garante que a imagem não estique */
+        @keyframes panBackground {
+            0% { transform: scale(1.1) translateX(-20px); }
+            100% { transform: scale(1.1) translateX(20px); }
         }
 
-        .obstaculo-container {
-            position: absolute;
-            z-index: 4;
-            display: none; /* Controlado pelo JS */
-        }
-        .obstaculo-container img { width: 100%; height: 130%; object-fit: contain; }
-
-        /* Estilos específicos para pedra e galho */
-        .pedra { width: 400px; height: 150px; bottom: 60px; }
-        .galho { width: 800px; height: 400px; top: -100px; }
-
-        .ground {
-            position: absolute; bottom: 0;
-            width: 100%; height: 60px;
-            background: #5D4037;
-            border-top: 8px solid #8BC34A;
-            z-index: 3;
+        h1 {
+            font-size: 90px; line-height: 0.9;
+            color: #FFD700;
+            font-weight: 900;
+            text-transform: uppercase;
+            text-align: center;
+            text-shadow: 4px 4px 0px #000, 0 0 20px rgba(255, 215, 0, 0.5);
+            margin-bottom: 30px;
+            animation: floatTitle 1.5s infinite ease-in-out;
         }
 
-        /* --- ANIMAÇÃO DE PULO (Física) --- */
-        .animate-jump {
-            animation: jump 900ms cubic-bezier(0.45, 0, 0.55, 1);
+        @keyframes floatTitle { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+
+        .record-box {
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(10px);
+            padding: 15px 40px; border-radius: 50px;
+            border: 2px solid rgba(255,255,255,0.5);
+            color: white; font-size: 22px; margin-bottom: 50px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
         }
 
-        @keyframes jump {
-            0% { bottom: 60px; }
-            40% { bottom: 300px; } /* Pulo alto */
-            60% { bottom: 300px; } /* Flutua */
-            100% { bottom: 60px; }
+        .btn-start {
+            padding: 20px 90px; font-size: 32px; font-weight: 800;
+            background: linear-gradient(to bottom, #2ecc71, #27ae60);
+            color: white; border-radius: 60px; text-decoration: none;
+            box-shadow: 0 8px 0 #1e8449, 0 15px 20px rgba(0,0,0,0.4);
+            transition: all 0.1s; text-transform: uppercase; letter-spacing: 2px;
         }
-
-        /* --- HUD (Interface) --- */
-        #score-board {
-            position: absolute; top: 30px; right: 40px;
-            font-size: 36px; font-weight: 900; color: #FFF;
-            text-shadow: 3px 3px 0 #000; z-index: 10;
-        }
-
-        /* --- TELA DE GAME OVER --- */
-        #game-over-screen {
-            display: none;
-            position: absolute; top: 0; left: 0;
-            width: 100%; height: 100%;
-            background: rgba(0,0,0,0.85);
-            flex-direction: column; justify-content: center; align-items: center;
-            color: white; z-index: 20;
-            backdrop-filter: blur(5px); /* Efeito de vidro borrado */
-        }
-
-        .game-over-content {
-            display: flex;
-            align-items: center;
-            gap: 20px; /* Espaço entre texto e imagem triste */
-            margin-bottom: 20px;
-        }
-
-        .sad-capivara {
-            width: 400px; height: auto;
-            animation: shake 2s infinite; /* Ela treme de choro */
-        }
-
-        @keyframes shake {
-            0%, 100% { transform: rotate(0deg); }
-            25% { transform: rotate(-5deg); }
-            75% { transform: rotate(5deg); }
-        }
-
-        h1 { font-size: 60px; color: #ff6b6b; text-transform: uppercase; }
-        p { font-size: 28px; margin-bottom: 30px; }
-
-        button.restart-btn {
-            padding: 15px 50px; font-size: 24px; font-weight: bold;
-            background: #4CAF50; color: white;
-            border: none; border-radius: 50px;
-            cursor: pointer; box-shadow: 0 5px 15px rgba(0,0,0,0.3);
-            transition: transform 0.2s;
-        }
-        button.restart-btn:hover { transform: scale(1.1); background: #45a049; }
-
+        
+        .btn-start:hover { transform: translateY(-2px); filter: brightness(1.1); }
+        .btn-start:active { transform: translateY(4px); box-shadow: 0 2px 0 #1e8449; }
     </style>
 </head>
 <body>
 
-    <div class="game-board" onclick="pular()">
-        <img src="fundo.png" class="background-img" alt="Cenário">
-        <div id="score-board">0</div>
-
-        <div class="capivara-container" id="capivara">
-             <img id="capivara-img" src="capivara-correndo-1.png" alt="🦫">
-        </div>
-
-        <div class="obstaculo-container pedra" id="pedra">
-            <img src="pedra.png" alt="🪨">
-        </div>
-
-        <div class="obstaculo-container galho" id="galho">
-            <img src="galho.png" alt="🌿">
-        </div>
-
-        <div class="ground"></div>
-
-        <div id="game-over-screen">
-            <div class="game-over-content">
-                <div>
-                    <h1>GAME OVER</h1>
-                    <p id="final-score">Pontuação: 0</p>
-                </div>
-                <img src="capivara-triste.png" class="sad-capivara" alt="Capivara Triste">
-            </div>
-            <button class="restart-btn" onclick="reiniciarJogo()">Tentar Novamente</button>
-        </div>
+    <div class="background-container">
+        <img src="fundo.jpg" class="background-img">
     </div>
 
+    <h1>O PULO DA<br>CAPIVARA</h1>
+
+    <div class="record-box">
+        🏆 Seu Recorde: <strong id="recorde-valor">0</strong> pontos
+    </div>
+
+    <a href="jogo.html" class="btn-start">JOGAR</a>
+
     <script>
-        const capivara = document.getElementById('capivara');
-        const capivaraImg = document.getElementById('capivara-img');
-        const pedra = document.getElementById('pedra');
-        const galho = document.getElementById('galho');
-        const scoreBoard = document.getElementById('score-board');
-        const gameOverScreen = document.getElementById('game-over-screen');
-        const finalScoreText = document.getElementById('final-score');
-
-        // Estados do Jogo
-        let isGameOver = false;
-        let score = 0;
-        let gameLoopId;
-        let animationLoopId; // Novo loop só para animação
-
-        // Controle de Obstáculos
-        let obstaclePosition = 100; // %
-        let currentObstacle = 'pedra'; 
-        let velocidade = 1.2; 
-
-        // ANIMAÇÃO DA CAPIVARA
-        let frameCorrendo = 1;
-
-        function startAnimationLoop() {
-            // Roda a cada 150ms (velocidade das patinhas)
-            animationLoopId = setInterval(() => {
-                if (isGameOver) return;
-
-                // Se tiver a classe 'animate-jump', ela está no ar
-                if (capivara.classList.contains('animate-jump')) {
-                    capivaraImg.src = 'capivara-pulo.png';
-                } else {
-                    // Se está no chão, alterna entre 1 e 2
-                    frameCorrendo = (frameCorrendo === 1) ? 2 : 1;
-                    capivaraImg.src = `capivara-correndo-${frameCorrendo}.png`;
-                }
-            }, 150);
+        // Lê o recorde salvo no navegador usando a chave 'capivara_recorde_simples'
+        // O parseInt garante que seja tratado como número
+        const recordeSalvo = localStorage.getItem('capivara_recorde_simples');
+        if (recordeSalvo) {
+            document.getElementById('recorde-valor').innerText = recordeSalvo;
         }
-
-        // PULO
-        function pular() {
-            if (isGameOver) return;
-            if (!capivara.classList.contains('animate-jump')) {
-                // Ao pular, troca a imagem imediatamente
-                capivaraImg.src = 'capivara-pulo.png';
-                capivara.classList.add('animate-jump');
-                
-                setTimeout(() => {
-                    capivara.classList.remove('animate-jump');
-                    // Quando cair, a animação de correr volta no loop
-                }, 900);
-            }
-        }
-
-        document.addEventListener('keydown', (e) => {
-            if (e.code === 'Space') pular();
-        });
-
-        // LÓGICA DE OBSTÁCULOS
-        function spawnObstacle() {
-            const tipo = Math.random() > 0.5 ? 'pedra' : 'galho';
-            currentObstacle = tipo;
-            
-            if (tipo === 'pedra') {
-                pedra.style.display = 'block';
-                galho.style.display = 'none';
-            } else {
-                galho.style.display = 'block';
-                pedra.style.display = 'none';
-            }
-            obstaclePosition = 100;
-        }
-
-        // LOOP PRINCIPAL (Movimento e Colisão)
-        function startGameLoop() {
-            spawnObstacle();
-            startAnimationLoop(); // Inicia as patinhas
-
-            gameLoopId = setInterval(() => {
-                if (isGameOver) return;
-
-                // Movimento
-                obstaclePosition -= velocidade;
-                const obstaculoAtivo = currentObstacle === 'pedra' ? pedra : galho;
-                obstaculoAtivo.style.left = obstaclePosition + '%';
-
-                // Pontuação e Respawn
-                if (obstaclePosition < -15) {
-                    score++;
-                    scoreBoard.innerText = score;
-                    if (score % 10 === 0) velocidade += 0.1; // Acelera
-                    spawnObstacle();
-                }
-
-                // Colisão
-                const isJumping = capivara.classList.contains('animate-jump');
-                // Zona de perigo (ajustada para ficar mais justo)
-                const hitZone = (obstaclePosition > 2 && obstaclePosition < 10);
-
-                if (hitZone) {
-                    if (currentObstacle === 'pedra' && !isJumping) {
-                        gameOver();
-                    } 
-                    if (currentObstacle === 'galho' && isJumping) {
-                        gameOver();
-                    }
-                }
-
-            }, 20);
-        }
-
-        function gameOver() {
-            isGameOver = true;
-            clearInterval(gameLoopId);
-            clearInterval(animationLoopId);
-            
-            finalScoreText.innerText = `Pontuação Final: ${score}`;
-            gameOverScreen.style.display = 'flex';
-        }
-
-        function reiniciarJogo() {
-            isGameOver = false;
-            score = 0;
-            velocidade = 1.2;
-            scoreBoard.innerText = "0";
-            
-            // Reseta visual
-            gameOverScreen.style.display = 'none';
-            capivara.classList.remove('animate-jump');
-            capivaraImg.src = 'capivara-correndo-1.png'; // Volta a correr
-            
-            startGameLoop();
-        }
-
-        // Inicia tudo
-        startGameLoop();
-
     </script>
+
 </body>
 </html>

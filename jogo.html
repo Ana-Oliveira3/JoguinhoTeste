@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Capy Jump</title>
+    <style>
+        /* --- ESTILOS GERAIS --- */
+        * { margin: 0; padding: 0; box-sizing: border-box; overflow: hidden; user-select: none; }
+
+        body {
+            width: 100vw; height: 100vh;
+            display: flex; justify-content: center; align-items: center;
+            background-color: #333;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .game-board {
+            width: 100%; height: 100%;
+            position: relative; overflow: hidden;
+        }
+
+        .background-img {
+            position: absolute; top: 0; left: 0;
+            width: 100%; height: 100%;
+            object-fit: cover; z-index: -1;
+            opacity: 0.8; /* Levemente escuro para destacar o jogo */
+        }
+
+        /* --- PERSONAGENS --- */
+        .capivara-container {
+            width: 200px; height: -100px;
+            position: absolute;
+            bottom: 20px; /* Ajustado para o novo chão */
+            left: 50px;
+            z-index: 5;
+            transition: bottom 0.1s; /* Suaviza pequenas quedas */
+        }
+        .capivara-container img { 
+            width: 100%; height: 100%; 
+            object-fit: contain; /* Garante que a imagem não estique */
+        }
+
+        .obstaculo-container {
+            position: absolute;
+            z-index: 4;
+            display: none; /* Controlado pelo JS */
+        }
+        .obstaculo-container img { width: 100%; height: 130%; object-fit: contain; }
+
+        /* Estilos específicos para pedra e galho */
+        .pedra { width: 400px; height: 150px; bottom: 60px; }
+
+        .ground {
+            position: absolute; bottom: 0;
+            width: 100%; height: 60px;
+            background: #5D4037;
+            border-top: 8px solid #8BC34A;
+            z-index: 3;
+        }
+
+        /* --- ANIMAÇÃO DE PULO (Física) --- */
+        .animate-jump {
+            animation: jump 900ms cubic-bezier(0.45, 0, 0.55, 1);
+        }
+
+        @keyframes jump {
+            0% { bottom: 60px; }
+            40% { bottom: 300px; } /* Pulo alto */
+            60% { bottom: 300px; } /* Flutua */
+            100% { bottom: 60px; }
+        }
+
+        /* --- HUD (Interface) --- */
+        #score-board {
+            position: absolute; top: 30px; right: 40px;
+            font-size: 36px; font-weight: 900; color: #FFF;
+            text-shadow: 3px 3px 0 #000; z-index: 10;
+        }
+
+        /* --- TELA DE GAME OVER --- */
+        #game-over-screen {
+            display: none; position: absolute; top: 0; left: 0;
+            width: 100%; height: 100%; background: rgba(0,0,0,0.85);
+            flex-direction: column; justify-content: center; align-items: center;
+            color: white; z-index: 20; backdrop-filter: blur(5px);
+        }
+
+        .game-over-content { display: flex; align-items: center; gap: 20px; margin-bottom: 20px; }
+        .sad-capivara { width: 150px; height: auto; animation: shake 2s infinite; }
+        @keyframes shake { 0%, 100% { transform: rotate(0deg); } 25% { transform: rotate(-5deg); } 75% { transform: rotate(5deg); } }
+
+        h1 { font-size: 60px; color: #ff6b6b; text-transform: uppercase; }
+        p { font-size: 28px; margin-bottom: 30px; }
+
+        .btn-container { display: flex; gap: 20px; }
+
+        button {
+            padding: 15px 40px; font-size: 20px; font-weight: bold;
+            border: none; border-radius: 50px; cursor: pointer;
+            transition: transform 0.2s;
+        }
+        .btn-restart { background: #4CAF50; color: white; }
+        .btn-menu { background: #ff9800; color: white; }
+        button:hover { transform: scale(1.1); }
+
+        @keyframes shake {
+            0%, 100% { transform: rotate(0deg); }
+            25% { transform: rotate(-5deg); }
+            75% { transform: rotate(5deg); }
+        }
+
+        h1 { font-size: 60px; color: #ff6b6b; text-transform: uppercase; }
+        p { font-size: 28px; margin-bottom: 30px; }
+
+        button.restart-btn {
+            padding: 15px 50px; font-size: 24px; font-weight: bold;
+            background: #4CAF50; color: white;
+            border: none; border-radius: 50px;
+            cursor: pointer; box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            transition: transform 0.2s;
+        }
+        button.restart-btn:hover { transform: scale(1.1); background: #45a049; }
+
+        #galho { 
+    width: 100px; 
+    height: 80px; 
+    /* A mágica está aqui: bottom relativo ao chão */
+    bottom: calc(var(--altura-chao) + 120px); 
+    /* Não use 'top', use 'bottom' para ficar alinhado com o chão */
+    position: absolute;
+    z-index: 4;
+    display: none;
+    
+}
+#galho { width: 800px; height: 400px}
+
+    </style>
+</head>
+<body>
+
+    <div class="game-board" onclick="pular()">
+        <img src="fundo.png" class="background-img" alt="Cenário">
+        <div id="score-board">0</div>
+
+        <div class="capivara-container" id="capivara">
+             <img id="capivara-img" src="capivara-correndo-1.png" alt="🦫">
+        </div>
+
+        <div class="obstaculo-container pedra" id="pedra">
+            <img src="pedra.png" alt="🪨">
+        </div>
+
+        <div class="obstaculo-container galho" id="galho">
+            <img src="galho.png" alt="🌿">
+        </div>
+
+        <div class="ground"></div>
+
+        <div id="game-over-screen">
+            <div class="game-over-content">
+                <div>
+                    <h1>GAME OVER</h1>
+                    <p id="final-score">Pontuação: 0</p>
+                </div>
+                <img src="capivara-triste.png" class="sad-capivara" alt="Triste">
+            </div>
+            
+            <div class="btn-container">
+                <button class="btn-restart" onclick="location.reload()">Tentar de Novo</button>
+                <button class="btn-menu" onclick="window.location.href='index.html'">Menu Inicial</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const capivara = document.getElementById('capivara');
+        const capivaraImg = document.getElementById('capivara-img');
+        const pedra = document.getElementById('pedra');
+        const galho = document.getElementById('galho');
+        const scoreBoard = document.getElementById('score-board');
+        const gameOverScreen = document.getElementById('game-over-screen');
+        const finalScoreText = document.getElementById('final-score');
+
+        // Estados do Jogo
+        let isGameOver = false;
+        let score = 0;
+        let gameLoopId;
+        let animationLoopId; 
+
+        // Controle de Obstáculos
+        let obstaclePosition = 100; // %
+        let currentObstacle = 'pedra'; 
+        let velocidade = 1.0; 
+
+        // ANIMAÇÃO DA CAPIVARA
+        let frameCorrendo = 1;
+
+        function startAnimationLoop() {
+            animationLoopId = setInterval(() => {
+                if (isGameOver) return;
+                if (capivara.classList.contains('animate-jump')) {
+                    capivaraImg.src = 'capivara-pulo.png';
+                } else {
+                    frameCorrendo = (frameCorrendo === 1) ? 2 : 1;
+                    capivaraImg.src = `capivara-correndo-${frameCorrendo}.png`;
+                }
+            }, 150);
+        }
+
+        function pular() {
+            if (isGameOver) return;
+            if (!capivara.classList.contains('animate-jump')) {
+                capivaraImg.src = 'capivara-pulo.png';
+                capivara.classList.add('animate-jump');
+                setTimeout(() => {
+                    capivara.classList.remove('animate-jump');
+                }, 900);
+            }
+        }
+
+        document.addEventListener('keydown', (e) => {
+            if (e.code === 'Space') pular();
+        });
+
+        function spawnObstacle() {
+            const tipo = Math.random() > 0.5 ? 'pedra' : 'galho';
+            currentObstacle = tipo;
+            
+            if (tipo === 'pedra') {
+                pedra.style.display = 'block';
+                galho.style.display = 'none';
+            } else {
+                galho.style.display = 'block';
+                pedra.style.display = 'none';
+            }
+            obstaclePosition = 100;
+        }
+
+        function startGameLoop() {
+            spawnObstacle();
+            startAnimationLoop();
+
+            gameLoopId = setInterval(() => {
+                if (isGameOver) return;
+
+                // Movimento
+                obstaclePosition -= velocidade;
+                const obstaculoAtivo = currentObstacle === 'pedra' ? pedra : galho;
+                obstaculoAtivo.style.left = obstaclePosition + '%';
+
+                // Pontuação
+                if (obstaclePosition < -15) {
+                    score++;
+                    scoreBoard.innerText = score;
+                    if (score % 5 === 0) velocidade += 0.05; // Acelera suavemente
+                    spawnObstacle();
+                }
+
+                // Colisão
+                checkCollision(obstaculoAtivo);
+
+            }, 20);
+        }
+
+        function checkCollision(obstaculo) {
+            const r1 = capivara.getBoundingClientRect();
+            const r2 = obstaculo.getBoundingClientRect();
+            
+            // Margem de tolerância para hitbox não ser quadrada demais
+            const m = 58; 
+
+            const colisao = !(r1.right - m < r2.left + m || 
+                              r1.left + m > r2.right - m || 
+                              r1.bottom - m < r2.top + m || 
+                              r1.top + m > r2.bottom - m);
+
+            if (colisao) {
+                gameOver();
+            }
+        }
+
+        function gameOver() {
+            isGameOver = true;
+            clearInterval(gameLoopId);
+            clearInterval(animationLoopId);
+            
+            // --- CÓDIGO DE SALVAR O RECORDE ---
+            // 1. Pega o recorde antigo (se não tiver, assume 0)
+            let recordeAtual = parseInt(localStorage.getItem('capivara_recorde_simples') || '0');
+
+            // 2. Compara com o score atual
+            if (score > recordeAtual) {
+                // 3. Salva o novo recorde
+                localStorage.setItem('capivara_recorde_simples', score);
+                console.log('Novo recorde salvo: ' + score);
+            }
+
+            finalScoreText.innerText = `Pontuação Final: ${score}`;
+            gameOverScreen.style.display = 'flex';
+        }
+
+        // Inicia tudo
+        startGameLoop();
+    </script>
+</body>
+</html>
